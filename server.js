@@ -8,10 +8,27 @@ const app = express();
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors());
+
+// Restrict CORS to your frontend's domain
+const corsOptions = {
+  origin: "*", // Replace with your frontend's domain for stricter security
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
 
 // Load environment variables
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
+// Ensure Paystack secret key is set
+if (!PAYSTACK_SECRET_KEY) {
+  console.error("PAYSTACK_SECRET_KEY is not set in the environment variables.");
+  process.exit(1); // Exit process if the secret key is missing
+}
+
+// Root route for testing
+app.get("/", (req, res) => {
+  res.send("Paystack backend server is running and ready to handle requests.");
+});
 
 // Initialize a transaction
 app.post("/initialize-transaction", async (req, res) => {
@@ -34,9 +51,10 @@ app.post("/initialize-transaction", async (req, res) => {
 
     return res.status(200).json(response.data);
   } catch (error) {
+    console.error("Error initializing transaction:", error.response?.data || error.message);
     return res
-      .status(500)
-      .json({ error: error.response.data || "Failed to initialize transaction" });
+      .status(error.response?.status || 500)
+      .json({ error: error.response?.data || "Failed to initialize transaction" });
   }
 });
 
@@ -60,9 +78,10 @@ app.get("/verify-transaction/:reference", async (req, res) => {
 
     return res.status(200).json(response.data);
   } catch (error) {
+    console.error("Error verifying transaction:", error.response?.data || error.message);
     return res
-      .status(500)
-      .json({ error: error.response.data || "Failed to verify transaction" });
+      .status(error.response?.status || 500)
+      .json({ error: error.response?.data || "Failed to verify transaction" });
   }
 });
 
